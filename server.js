@@ -1,119 +1,60 @@
-import { useState, useEffect } from 'react';
+const express = require('express');
+const next = require('next');
+const bodyParser = require('body-parser');
 
-export default function Home() {
-  const [personajes, setPersonajes] = useState([]);
-  const [nombre, setNombre] = useState(''); 
-  const [habilidad, setHabilidad] = useState(''); 
-  const [clase, setClase] = useState(''); 
-  const [dificultad, setDificultad] = useState(''); 
-  const [idEditar, setIdEditar] = useState(null);
+const dev = process.env.NODE_ENV !== 'production';
+const app = next({ dev });
+const handle = app.getRequestHandler();
 
-  // Cargar personajes desde localStorage al iniciar la página
-  useEffect(() => {
-    const personajesGuardados = JSON.parse(localStorage.getItem('personajes')) || [];
-    setPersonajes(personajesGuardados);
-  }, []);
+app.prepare().then(() => {
+  const server = express();
+  server.use(bodyParser.json());
 
-  // Guardar personajes en localStorage
-  const guardarEnLocalStorage = (personajes) => {
-    localStorage.setItem('personajes', JSON.stringify(personajes));
-  };
+  // Simulación de base de datos en memoria
+  let personajes = [];
 
-  // Manejar la adición de personajes
-  const handleAgregarPersonaje = (e) => {
-    e.preventDefault();
-    const nuevoPersonaje = {
-      id: Date.now(),
-      nombre,
-      habilidad,
-      clase,
-      dificultad,
-    };
-    const nuevosPersonajes = [...personajes, nuevoPersonaje];
-    setPersonajes(nuevosPersonajes);
-    guardarEnLocalStorage(nuevosPersonajes); // Guardar en localStorage
-    limpiarFormulario();
-  };
+  // Obtener todos los personajes
+  server.get('/api/personajes', (req, res) => {
+    res.json(personajes);
+  });
 
-  // Manejar la edición de personajes
-  const handleEditarPersonaje = (e) => {
-    e.preventDefault();
-    const personajesActualizados = personajes.map((p) =>
-      p.id === idEditar ? { ...p, nombre, habilidad, clase, dificultad } : p
+  // Agregar un personaje
+  server.post('/api/personajes', (req, res) => {
+    const nuevoPersonaje = req.body;
+    personajes.push(nuevoPersonaje);
+    res.json({ message: 'Personaje agregado', personaje: nuevoPersonaje });
+  });
+
+// Editar un personaje
+server.put('/api/personajes/:id', (req, res) => {
+    const { id } = req.params;
+    const { nombre, habilidad, clase, dificultad } = req.body; // Extraer todos los campos del cuerpo de la solicitud
+    personajes = personajes.map((p) =>
+      p.id === Number(id)
+        ? { ...p, nombre, habilidad, clase, dificultad } // Actualizar todos los campos
+        : p
     );
-    setPersonajes(personajesActualizados);
-    guardarEnLocalStorage(personajesActualizados); // Guardar en localStorage
-    limpiarFormulario();
-  };
+    res.json({
+      message: 'Personaje actualizado',
+      personaje: { id: Number(id), nombre, habilidad, clase, dificultad }, // Enviar el personaje actualizado
+    });
+  });
+  
 
-  // Manejar la eliminación de personajes
-  const handleEliminarPersonaje = (id) => {
-    const personajesRestantes = personajes.filter((p) => p.id !== id);
-    setPersonajes(personajesRestantes);
-    guardarEnLocalStorage(personajesRestantes); // Guardar en localStorage
-  };
+  // Eliminar un personaje
+  server.delete('/api/personajes/:id', (req, res) => {
+    const { id } = req.params;
+    personajes = personajes.filter((p) => p.id !== Number(id));
+    res.json({ message: 'Personaje eliminado' });
+  });
 
-  // Manejar la selección de un personaje para editar
-  const seleccionarParaEditar = (personaje) => {
-    setIdEditar(personaje.id);
-    setNombre(personaje.nombre || '');
-    setHabilidad(personaje.habilidad || '');
-    setClase(personaje.clase || '');
-    setDificultad(personaje.dificultad || '');
-  };
+  // Manejar todas las otras rutas con Next.js
+  server.all('*', (req, res) => {
+    return handle(req, res);
+  });
 
-  // Limpiar el formulario
-  const limpiarFormulario = () => {
-    setNombre('');
-    setHabilidad('');
-    setClase('');
-    setDificultad('');
-    setIdEditar(null);
-  };
-
-  return (
-    <div>
-      <h1>Personajes del Videojuego</h1>
-      <ul>
-        {personajes.map((personaje) => (
-          <li key={personaje.id}>
-            {personaje.nombre} - {personaje.habilidad || '-'} - {personaje.clase || '-'} - Dificultad: {personaje.dificultad || '-'}
-            <button onClick={() => seleccionarParaEditar(personaje)}>Editar</button>{' '}
-            <button onClick={() => handleEliminarPersonaje(personaje.id)}>Eliminar</button>
-          </li>
-        ))}
-      </ul>
-
-      <form onSubmit={idEditar ? handleEditarPersonaje : handleAgregarPersonaje}>
-        <input
-          type="text"
-          placeholder="Character Name"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Ability"
-          value={habilidad}
-          onChange={(e) => setHabilidad(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Class"
-          value={clase}
-          onChange={(e) => setClase(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Difficulty"
-          value={dificultad}
-          onChange={(e) => setDificultad(e.target.value)}
-        />
-        <button 
-        type="submit">
-            {idEditar ? 'Actualizar' : 'Agregar'}
-            </button>
-      </form>
-    </div>
-  );
-}
+  server.listen(3000, (err) => {
+    if (err) throw err;
+    console.log('> Ready on http://localhost:3000');
+  });
+});
