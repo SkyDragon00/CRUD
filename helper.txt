@@ -1,0 +1,4 @@
+Iniciar proyecto o instalar dependencias: npm init
+Para iniciar va a ser
+    - dentro de packaje.json poner 
+        "start": node <nombre_p>

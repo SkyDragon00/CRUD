@@ -1,0 +1,19 @@
+{
+  "name": "nextpr",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "author": "Dome",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.0",
+    "http": "^0.0.1-security",
+    "next": "^14.2.14"
+  }
+}
